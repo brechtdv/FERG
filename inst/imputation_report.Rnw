@@ -1,0 +1,161 @@
+\documentclass[12pt, a4paper]{article}
+\pagestyle{plain}
+
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage[top=2cm, bottom=2cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{amsmath}
+
+\definecolor{BLUE}{RGB}{26, 59, 91}
+\definecolor{GREEN}{RGB}{119, 147, 60}
+\setlength{\parindent}{0cm}
+
+\begin{document}
+
+<<echo=FALSE, include=FALSE>>=
+opts_chunk$set(concordance=TRUE)
+library(xtable)
+rws_tab1 <- seq(0, 12, by = 2)
+col_tab1 <- rep("\\rowcolor[gray]{0.95}", length(rws_tab1))
+rws_tab2 <- seq(0, 14, by = 2)
+col_tab2 <- rep("\\rowcolor[gray]{0.95}", length(rws_tab2))
+@
+
+\begin{Large}
+\textbf{Summary of Imputations for \Sexpr{agent_full}}\\
+\end{Large}
+\emph{Report generated on \texttt{\Sexpr{Sys.Date()}} by the Computational Task Force of the Foodborne Disease Burden Epidemiology Reference Group (FERG) of the World Health Organization.}\\
+
+%% MISSINGNESS MAP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{centering}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{\Sexpr{paste(agent, "missing.png", sep = "_")}}
+\end{figure}
+\end{centering}
+
+%% SUMMARY PER WHO SUBREGION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\textbf{Imputed incidence per 100,000 per WHO sub-region}
+\begin{table}[h!]
+\begin{small}
+\flushleft
+<<echo=FALSE, results="asis">>=
+print(do.call(xtable, c(list(imp_summary$reg_fit), tab1_options)),
+      floating = FALSE,
+      format.args = list(big.mark = ",", decimal.mark = "."),
+      booktabs = TRUE,
+      include.rownames = FALSE,
+      add.to.row = list(pos = as.list(rws_tab1),
+                   command = col_tab1))
+@
+\end{small}
+\end{table}\\
+
+\emph{Interpretation:}
+\begin{itemize}
+	\item The first four columns show the mean, median and $2.5^{th}$ and $97.5^{th}$ percentiles of the posterior distribution for the concerned WHO sub-region. The fifth column shows the mean of the observed values per WHO sub-region (if present). The sixth column shows the number of observed values versus the number of countries.
+	\item Countries with missing values will be assigned the imputed value of the corresponding WHO sub-region (\emph{cf} page 4). The multiple imputation model is presented on page 3.
+	\item Empty rows, if present, indicate that all countries in the concerned WHO sub-region had non-missing values.
+\end{itemize}
+
+\pagebreak
+
+%% CASES PER WHO SUBREGION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\textbf{Cases per WHO sub-region}
+\begin{table}[h!]
+\begin{small}
+\flushleft
+<<echo=FALSE, results="asis">>=
+print(do.call(xtable, c(list(cases), tab2_options)),
+      floating = FALSE,
+      format.args = list(big.mark = ",", decimal.mark = "."),
+      booktabs = TRUE,
+      include.rownames = FALSE,
+      add.to.row = list(pos = as.list(rws_tab2),
+                   command = col_tab2))
+@
+\end{small}
+\end{table}
+
+\pagebreak
+
+%% MODEL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\textbf{Imputation Model}\\
+
+The applied imputation model is a hierarchical random effects model. The model assumes that the log-transformed incidence in country $j$ belonging to WHO sub-region $i$ arises from a Normal distribution with WHO sub-region specific mean $\mu_i$ and a within-region (= between-country) variance $\sigma^2_{w}$. Each WHO sub-region specific mean $\mu_i$ is assumed to arise from a Normal distribution with mean $\mu_0$ and a between-region variance $\sigma^2_{b}$:
+\begin{align}
+log(\theta_{ij}) \sim Normal(\mu_i, \sigma^2_{w})\\
+\mu_i \sim Normal(\mu_0, \sigma^2_{b})
+\end{align}\\
+
+Incidence values for countries with no data are imputed based on the posterior distributions of the hierarchical random effects model. For countries in a WHO sub-region where none of the countries have data, the log-incidence is imputed as multiple random draws from a Normal distribution with mean equal to the global intercept $\mu_0$ and variance equal to the sum of the between-region variance $\sigma^2_{b}$ and the within-region variance $\sigma^2_{w}$:
+\begin{align}
+log(\theta_{ij})^{*} \sim Normal(\mu_0, \sigma^2_{b} + \sigma^2_{w})
+\end{align}
+
+For countries in a WHO sub-region where at least one of the other countries has data, the log-incidence is imputed as multiple random draws from a Normal distribution with mean equal to the region-specific intercept $\mu_i$ and variance equal to the within-region variance $\sigma^2_{w}$:
+\begin{align}
+log(\theta_{ij})^{*} \sim Normal(\mu_i, \sigma^2_{w})
+\end{align}\\
+
+%% LOG-NORMAL PARAMETER ESTIMATES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\textbf{Parameter estimates of the Log-Normal model for \Sexpr{agent_full}}
+\begin{itemize}
+	\item Within-region variance $\sigma^2_{w}$ = \Sexpr{imp_summary$within_region_var}
+	\item Between-region variance $\sigma^2_{b}$ = \Sexpr{imp_summary$between_region_var}
+\end{itemize}
+
+\pagebreak
+
+%% WHO SUB-REGIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{centering}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{WHOsub.png}
+\end{figure}
+\end{centering}
+
+\begin{table}[h!]
+\flushleft
+\renewcommand{\arraystretch}{1.5}
+\begin{scriptsize}
+\begin{tabular}{l p{12cm}}
+\hline
+\textbf{WHO sub-region} & \textbf{Member states} \\
+\hline
+AFROD & Algeria, Angola, Benin, Burkina Faso, Cameroon, Cape Verde, Chad, Comoros, Equatorial Guinea, Gabon, Gambia, Ghana, Guinea, Guinea-Bissau, Liberia, Madagascar, Mali, Mauritania, Mauritius, Niger, Nigeria, Sao Tome and Principe, Senegal, Seychelles, Sierra Leone, Togo \\
+
+AFROE & Botswana, Burundi, Central African Republic, Congo, C\^{o}te d'Ivoire, Democratic Republic of the Congo, Eritrea, Ethiopia, Kenya, Lesotho, Malawi, Mozambique, Namibia, Rwanda, South Africa, Swaziland, Uganda, United Republic of Tanzania, Zambia, Zimbabwe \\
+
+AMROA & Canada, Cuba, United States of America \\
+
+AMROB & Antigua and Barbuda, Argentina, Bahamas, Barbados, Belize, Brazil, Chile, Colombia, Costa Rica, Dominica, Dominican Republic, El Salvador, Grenada, Guyana, Honduras, Jamaica, Mexico, Panama, Paraguay, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, Suriname, Trinidad and Tobago, Uruguay, Venezuela (Bolivarian Republic of) \\
+
+AMROD & Bolivia, Ecuador, Guatemala, Haiti, Nicaragua, Peru \\
+
+EMROB & Bahrain, Iran (Islamic Republic of), Jordan, Kuwait, Lebanon, Libyan Arab Jamahiriya, Oman, Qatar, Saudi Arabia, Syrian Arab Republic, Tunisia, United Arab Emirates \\
+
+EMROD & Afghanistan, Djibouti, Egypt, Iraq, Morocco, Pakistan, Somalia, South Sudan, Sudan, Yemen \\
+
+EUROA & Andorra, Austria, Belgium, Croatia, Cyprus, Czech Republic, Denmark, Finland, France, Germany, Greece, Iceland, Ireland, Israel, Italy, Luxembourg, Malta, Monaco, Netherlands, Norway, Portugal, San Marino, Slovenia, Spain, Sweden, Switzerland, United Kingdom \\
+
+EUROB & Albania, Armenia, Azerbaijan, Bosnia and Herzegovina, Bulgaria, Georgia, Kyrgyzstan, Montenegro, Poland, Romania, Serbia, Slovakia, Tajikistan, The Former Yugoslav Republic of Macedonia, Turkey, Turkmenistan, Uzbekistan \\
+
+EUROC & Belarus, Estonia, Hungary, Kazakhstan, Latvia, Lithuania, Republic of Moldova, Russian Federation, Ukraine \\
+
+SEAROB & Indonesia, Sri Lanka, Thailand \\
+
+SEAROD & Bangladesh, Bhutan, Democratic People's Republic of Korea, India, Maldives, Myanmar, Nepal, Timor-Leste \\
+
+WPROA & Australia, Brunei Darussalam, Japan, New Zealand, Singapore \\
+
+WPROB & Cambodia, China, Cook Islands, Fiji, Kiribati, Lao People's Democratic Republic, Malaysia, Marshall Islands, Micronesia (Federated States of), Mongolia, Nauru, Niue, Palau, Papua New Guinea, Philippines, Republic of Korea, Samoa, Solomon Islands, Tonga, Tuvalu, Vanuatu, Viet Nam \\
+\hline
+\end{tabular}
+\end{scriptsize}
+\end{table}
+
+\end{document}

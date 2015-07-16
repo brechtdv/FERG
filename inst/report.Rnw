@@ -1,0 +1,324 @@
+\documentclass[12pt, a4paper]{article}
+\pagestyle{empty}
+
+\usepackage{tikz}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage[top=2cm, bottom=2cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor=blue,
+    pdfpagemode=UseOutlines
+}
+
+\definecolor{BLUE}{RGB}{26, 59, 91}
+\definecolor{GREEN}{RGB}{119, 147, 60}
+\setlength{\parindent}{0cm}
+
+\begin{document}
+
+<<echo=FALSE, include=FALSE>>=
+opts_chunk$set(concordance=TRUE)
+library(xtable)
+
+n_region <- length(DALY[[1]])
+by <- ifelse(n_region == 6, "region", "subregion")
+contrib <- FERG:::get_contrib(DALY[[1]])
+
+rws <- seq(0, n_region + 1, by = 2)
+col <- rep("\\rowcolor[gray]{0.95}", length(rws))
+print_denom <- ifelse(denom == 1e5, "100k", "1e9")
+
+subsection <-
+  function(title, what, age, names) {
+    title <- gsub("_", "\\\\_", title)
+    title <- gsub("<", "\\\\textless", title)
+    title <- gsub("#", "\\\\#", title)
+    
+    cat("\\subsection{", title, "}\n", sep = "")
+
+    cat("{\\renewcommand{\\arraystretch}{1.1}")
+    cat("\\begin{table}[H]\n")
+    cat("\\begin{minipage}{0.6\\textwidth}\n")
+    cat("\\flushleft\n")
+    cat("absolute numbers\\\\[12pt]\n")
+
+    #cat("\\resizebox{\\linewidth}{!}{\n")
+    print(xtable(summarize(DALY, what, rate = FALSE,
+                           age = age, denom = denom,
+                           names = names)[, 1:4],
+                 digits = digits_net),
+          scalebox = scale,
+          floating = FALSE,
+          format.args = list(big.mark = ",", decimal.mark = "."),
+          add.to.row = list(pos = as.list(rws),
+                            command = col))
+    #cat("}\n")
+    
+    cat("\\end{minipage}\n")
+    cat("\\begin{minipage}{0.4\\textwidth}\n")
+    cat("\\flushleft\n")
+    cat("rates per ", print_denom, "\\\\[10pt]\n", sep = "")
+
+    #cat("\\resizebox{\\linewidth}{!}{\n")
+    print(xtable(summarize(DALY, what, rate = TRUE,
+                           denom = denom, age = age, names = names)[, 1:4],
+                 digits = digits_rate),
+          scalebox = scale,
+          floating = FALSE,
+          format.args = list(big.mark = ",", decimal.mark = "."),
+          add.to.row = list(pos = as.list(rws),
+                            command = col))
+    #cat("}\n")
+    
+    cat("\\end{minipage}\n")
+    cat("\\end{table}}\n\n")
+  }
+
+print_subsections <-
+  function(what, add = NULL) {
+    ## all outcomes, all ages
+    subsection("All outcomes, all ages", what, "all", "all")
+
+    ## all outcomes, per age
+    if (by_age) {
+      subsection("All outcomes, \\textless5 age group", what, "<5", "all")
+      subsection("All outcomes, 5+ age group", what, "5+", "all")
+    }
+
+    ## per outcome, all ages
+    if (what %in% c("cases", "yld") && sum(contrib == "yld") > 1) {
+      for (i in seq(contrib)[contrib == "yld"]) {
+        subsection(paste0(names(contrib[i]), ", all ages"),
+                   what, "all", names(contrib[i]))
+      }
+    }
+    
+    ## per outcome, all ages
+    if (what %in% c("deaths", "yll") && sum(contrib == "yll") > 1) {
+      for (i in seq(contrib)[contrib == "yll"]) {
+        subsection(paste0(names(contrib[i]), ", all ages"),
+                   what, "all", names(contrib[i]))
+      }
+    }
+    
+    ## add outcomes
+    if (!is.null(add)) {
+      for (i in seq_along(add)) {
+
+        ## cases, yld
+        if (what %in% c("cases", "yld") &&
+              contrib[names(contrib) == add[[i]][1]] == "yld") {
+          subsection(paste0(names(add)[i], ", all ages"),
+                     what, "all", add[[i]])
+              }
+
+        ## deaths, yll
+        if (what %in% c("deaths", "yll") &&
+              contrib[names(contrib) == add[[i]][1]] == "yll") {
+          subsection(paste0(names(add)[i], ", all ages"),
+                     what, "all", add[[i]])
+              }
+      }
+    }
+  }
+@
+
+\begin{large}
+\textbf{Global burden of \Sexpr{agent_full} by WHO \Sexpr{by}}\\
+\end{large}
+\emph{Report generated on \texttt{\Sexpr{Sys.Date()}} by the Computational Task Force of the Foodborne Disease Burden Epidemiology Reference Group (FERG) of the World Health Organization.}\\
+
+\tableofcontents
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% INCIDENCE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Incident cases}
+<<echo=FALSE, results="asis">>=
+print_subsections("incidence")
+@
+
+
+%% CASES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Incident clinical cases}
+<<echo=FALSE, results="asis">>=
+print_subsections("cases", add)
+@
+
+
+%% DEATHS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Deaths}
+<<echo=FALSE, results="asis">>=
+print_subsections("deaths", add)
+@
+
+
+%% YLD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Years Lived with Disability (YLDs)}
+<<echo=FALSE, results="asis">>=
+print_subsections("yld")
+@
+
+
+%% YLL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Years of Life Lost (YLLs)}
+<<echo=FALSE, results="asis">>=
+print_subsections("yll")
+@
+
+
+%% DALY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Disability Adjusted Life Years (DALYs)}
+<<echo=FALSE, results="asis">>=
+print_subsections("daly")
+@
+
+
+%% DALY per case %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{DALYs per Incident case}
+
+\begin{table}[H]
+\flushleft
+<<echo=FALSE, results="asis">>=
+print(xtable(summarize(DALY, "daly_case")[, 1:4],
+             digits = digits_rate),
+      scale = 0.8,
+      floating = FALSE,
+      format.args = list(big.mark = ",", decimal.mark = "."),
+      add.to.row = list(pos = as.list(rws),
+                        command = col))
+@
+\end{table}
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Global burden maps}
+\begin{centering}
+\begin{figure}[H]
+  \centering
+  \caption{Global Burden of \Sexpr{agent_full}---DALYs per \Sexpr{print_denom}}
+  \includegraphics[width=\textwidth]{\Sexpr{paste(agent, "_", by, "_daly.png", sep = "")}}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \caption{Global Burden of \Sexpr{agent_full}---Incident cases per \Sexpr{print_denom}}
+  \includegraphics[width=\textwidth]{\Sexpr{paste(agent, "_", by, "_inc.png", sep = "")}}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \caption{Global Burden of \Sexpr{agent_full}---Deaths per \Sexpr{print_denom}}
+  \includegraphics[width=\textwidth]{\Sexpr{paste(agent, "_", by, "_mrt.png", sep = "")}}
+\end{figure}
+\end{centering}
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Disease model}
+
+{\renewcommand{\arraystretch}{1.2}
+\begin{table}[h!]
+  \centering
+  \resizebox{\linewidth}{!}{
+<<echo=FALSE, results="asis">>=
+dismod <- cbind(DM, DW = t(KEY[10, -1]))
+names(dismod)[7] <- "DW"
+dismod[, 7] <- gsub(",", ".", as.character(dismod[, 7]))
+
+print(xtable(dismod), floating = FALSE, include.rownames = FALSE)
+cat("}")
+cat("\\caption{",
+    gsub("_", "\\\\_", agent),
+    " Computational Disease Model}",
+    sep = "")
+@
+\end{table}}
+
+\begin{centering}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{\Sexpr{dm_file}}
+\end{figure}
+\end{centering}
+
+<<echo=FALSE, results='asis', fig.height=5.5>>=
+if (fb) {
+  cat("\\pagebreak\n")
+  cat("\\section{Proportion Foodborne}")
+  cat("\\subsection{Raw results}")
+  
+  total_fb <- NULL
+  for (what in c("incidence", "deaths", "daly")) {
+    a <- get_global(DALY, what)
+    b <- get_global(DALY_total, what)
+    total_fb <- rbind(total_fb, summary_stats(a / b, na.rm = T))
+  }
+  rownames(total_fb) <- paste0("GLOBAL/", c("incidence", "deaths", "daly"))
+
+  tab_exp <- t(sapply(exp, function(x) summary_stats(x[, "food"], na.rm = T)))
+
+  cat("{\\renewcommand{\\arraystretch}{1.1}")
+  cat("\\begin{table}[h!]")
+  cat("\\centering")
+  print(
+    xtable(rbind(tab_exp, total_fb)),
+    hline.after = c(-1, 0, nrow(tab_exp), nrow(tab_exp) + 3),
+    floating = FALSE,
+    add.to.row = list(pos = as.list(seq(0, 17, by = 2)),
+                      command = rep("\\rowcolor[gray]{0.95}", 9)))
+  cat("\\end{table}")
+  cat("}")
+
+  print(sa_plot(exp, "food"))
+  
+  if (n_region == 6) {
+    fb_by_reg <-
+      function(what) {
+        a <- get_global(DALY, what, by_region = T)
+        b <- get_global(DALY_total, what, by_region = T)
+        region_fb <- t(apply(a / b, 2, summary_stats, na.rm = T))
+        rownames(region_fb) <- levels(countryRegion$WHORegion)
+        return(region_fb)
+      }
+    
+    tab_fb_by_reg <-
+      function(what) {
+        cat("{\\renewcommand{\\arraystretch}{1.1}")
+        cat("\\begin{table}[h!]")
+        cat("\\centering")
+        print(
+          xtable(rbind(fb_by_reg(what),
+                       GLOBAL =
+                         total_fb[
+                           which(what ==
+                                   c("incidence", "deaths", "daly")), ])),
+          hline.after = c(-1, 0, 6, 7),
+          floating = FALSE,
+          add.to.row = list(pos = as.list(seq(0, 6, by = 2)),
+                            command = rep("\\rowcolor[gray]{0.95}", 4)))
+        cat("\\end{table}")
+        cat("}")
+      }
+    
+    cat("\\subsection{Results by WHO Region (incidence)}")
+    tab_fb_by_reg("incidence")
+      
+    cat("\\subsection{Results by WHO Region (deaths)}")
+    tab_fb_by_reg("deaths")
+    
+    cat("\\subsection{Results by WHO Region (DALYs)}")
+    tab_fb_by_reg("daly")
+  }
+}
+@
+
+\end{document}

@@ -1,0 +1,129 @@
+\documentclass[12pt, a4paper]{article}
+\pagestyle{empty}
+
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage[top=2cm, bottom=2cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor=blue,
+    pdfpagemode=UseOutlines
+}
+
+\definecolor{BLUE}{RGB}{26, 59, 91}
+\definecolor{GREEN}{RGB}{119, 147, 60}
+\setlength{\parindent}{0cm}
+
+\begin{document}
+
+<<echo=FALSE, include=FALSE>>=
+opts_chunk$set(concordance=TRUE)
+library(xtable)
+
+print_sections <-
+  function() {
+    tab_exp <-
+      lapply(exp_samples, function(x) t(apply(x, 2, summary_stats)))
+    
+    #################################################################
+    if (!is.null(food_samples)) {
+      tab_food <-
+        lapply(food_samples, function(x) t(apply(x, 2, summary_stats)))
+      tab_food <-
+        lapply(tab_food,
+               function(x) {
+                 rownames(x) <- paste0("food/", abbreviate(rownames(x), 5))
+                 return(x)
+                 })
+    }
+    #################################################################
+    
+    for (reg in seq_along(tab_exp)) {
+      reg_name <- names(tab_exp)[reg]
+      if (reg != 1) cat("\\pagebreak")
+      cat("\\subsection{", reg_name, "}")
+      
+      cat("{\\renewcommand{\\arraystretch}{1.1}")
+      cat("\\begin{table}[H]\n")
+      cat("\\centering\n")
+      
+      #################################################################
+      if (!is.null(food_samples)) {
+        print(
+          xtable(rbind(tab_exp[[reg]], tab_food[[reg]])),
+          floating = FALSE,
+          hline.after =
+            c(-1, 0, nrow(tab_exp[[reg]]),
+              nrow(tab_exp[[reg]]) + nrow(tab_food[[reg]])))
+        
+      } else {
+        print(
+          xtable(tab_exp[[reg]]),
+          floating = FALSE)
+      }
+      #################################################################
+
+      cat("\\end{table}}\n\n")
+      
+      print(
+        sa_plot(exp_samples[[reg]],
+                main = paste0(hazard, "\nExposure - ", reg_name)))
+      
+      #################################################################
+      if (!is.null(food_samples)) {
+        print(
+          sa_plot(food_samples[[reg]],
+                  main = paste0(hazard, "\nFood items - ", reg_name)))        
+      }
+      #################################################################
+
+    }
+  }
+@
+
+\begin{large}
+\textbf{\Sexpr{hazard} Source Attribution}\\
+\end{large}
+\emph{Report generated on \texttt{\Sexpr{Sys.Date()}}}
+%\emph{Report generated on \texttt{\Sexpr{Sys.Date()}} by the Computational Task Force of the Foodborne Disease Burden Epidemiology Reference Group (FERG) of the World Health Organization.}\\
+
+\tableofcontents
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% OVERVIEW %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proportion foodborne}
+<<echo=FALSE, results='asis'>>=
+print(xtable(t(sapply(exp_samples, function(x) summary_stats(x[, "food"])))))
+@
+<<echo=FALSE, fig.pos="h!">>=
+sa_plot(exp_samples, main = paste0(hazard, "\nProportion foodborne"))
+@
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% PER SUBREGION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results per WHO subregion}
+<<echo=FALSE, results="asis", fig.height=3.2>>=
+print_sections()
+@
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% PER SUBREGION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Source information}
+\subsection{Exposure data}
+<<echo=FALSE, size="footnotesize">>=
+print(exp_source)
+@
+
+\pagebreak %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Food item data}
+<<echo=FALSE, size="footnotesize">>=
+print(food_source)
+@
+\end{document}

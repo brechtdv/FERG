@@ -1,0 +1,17 @@
+Package: FERG
+Type: Package
+Title: DALY Calculation Framework for WHO/FERG
+Version: 0.1.0
+Date: 2015-07-16
+Authors@R: c(person("Brecht", "Devleesschauwer",
+             role = c("aut", "cre"), email = "brechtdv@gmail.com"),
+             person("Scott", "McDonald", role = "aut"))
+Author: Brecht Devleesschauwer [aut, cre],
+        Scott McDonald [aut]
+Maintainer: Brecht Devleesschauwer <brechtdv@gmail.com>
+Description: The FERG package provides functions for calculating and reporting DALYs in the framework of WHO's Foodborne Disease Burden Epidemiology Reference Group work towards the global burden of foodborne disease. The DALY calculation framework of the FERG package is based on the DALY package.
+Depends: R (>= 3.0.0), methods
+Imports: XLConnect, knitr, xtable, rjags, coda, ggplot2, prevalence, rworldmap, RColorBrewer, scales
+SystemRequirements: JAGS (>= 3.2.0) (see http://mcmc-jags.sourceforge.net)
+License: GPL (>= 2)
+LazyData: yes

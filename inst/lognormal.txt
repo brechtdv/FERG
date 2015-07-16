@@ -1,0 +1,17 @@
+model {
+  # Likelihood, specified using nested indexing.
+  # N = no. countries, each of which belongs to 1 of NR clusters
+  for (i in 1:N) {
+    log_y[i] ~ dnorm(mu[reg[i]], tau)
+  }
+
+  # Intercept can differ across regions
+  for (r in 1:NR) {
+    mu[r] ~ dnorm(mu.c, mu.tau)
+  }
+
+  # Priors
+  tau ~ dgamma(0.005, 0.005)
+  mu.c ~ dnorm(0, 0.00001)
+  mu.tau ~ dgamma(0.005, 0.005)
+}

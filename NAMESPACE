@@ -1,0 +1,30 @@
+import(methods, XLConnect, knitr, xtable, rjags, ggplot2)
+importFrom(coda, traceplot, densplot, gelman.plot, gelman.diag)
+importFrom(prevalence, betaPERT)
+importFrom(rworldmap, getMap, mapPolys, addMapLegend)
+importFrom(RColorBrewer, brewer.pal)
+importFrom(scales, hue_pal)
+
+export(
+  ## imputation functions
+  extractIncidence, check_db, plot_missing,
+  impute, summarize_imputation, imputation_report,
+  merge, save_merged_db, get_total_cases,
+
+  ## DALY calculation functions
+  readDatabase, check_XL, read_XL, get_contrib, get_local_LE,
+  getDALY_per_country, getDALY_per_region, getDALY_per_subregion,
+  summarize, check_convergence, DALY_map, FERG_report, mean_age,
+
+  ## source attribution functions
+  generate_samples, normalize_by_food, apply_prop_fb,
+  summary_stats, sa_plot, sa_barplot, sa_report,
+
+  ## FERG results :: helper functions
+  load_results, get_total, get_samples, get_all_samples,
+  get_samples_per_outcome, summarize_all, get_global,
+
+  ## FERG results :: plot functions
+  line_plot, region_barplot, full_barplot, scatter_plot)
+
+exportClasses(DALYdata, DALYmodel, DALYrun)
